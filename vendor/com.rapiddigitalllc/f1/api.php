@@ -21,13 +21,15 @@
 
 namespace F1;
 
+require_once(__DIR__.'/oauth/oauth_pecl.php');
+
 class Exception extends \Exception
 {
 
     public $response;
     public $extra;
 
-    public function __construct($message, $code = 0, $response = null, $extra = null, \OAuthException $previous = null)
+    public function __construct($message, $code = 0, $response = null, $extra = null, F1\OAuth\Exception $previous = null)
     {
         parent::__construct($message, $code, $previous);
         $this->response = $response;
@@ -293,13 +295,13 @@ class API
      * @param boolean $returnHeaders
      * @return void
      */
-    public function fetch($url, $data = null, $method = OAUTH_HTTP_METHOD_GET, $contentType = null, $returnHeaders = false, $retryCount = 0)
+    public function fetch($url, $data = null, $method = F1\OAuth\HTTP_METHOD_GET, $contentType = null, $returnHeaders = false, $retryCount = 0)
     {
-        if ($method == OAUTH_HTTP_METHOD_GET && is_array($data)) {
+        if ($method == F1\OAuth\HTTP_METHOD_GET && is_array($data)) {
             $url .= "?" . http_build_query($data);
             $data = null;
         }
-        if (($method == OAUTH_HTTP_METHOD_PUT || $method == OAUTH_HTTP_METHOD_POST) && (gettype($data) == "array" || gettype($data) == "object")) {
+        if (($method == F1\OAuth\HTTP_METHOD_PUT || $method == F1\OAuth\HTTP_METHOD_POST) && (gettype($data) == "array" || gettype($data) == "object")) {
             if ($contentType == "xml" || (!$contentType && $this->contentType == "xml")) {
                 $data = (string)$data;
             } else {
@@ -310,7 +312,7 @@ class API
         if (!$contentType) $contentType = "application/$this->contentType";
 
         try {
-            $o = new \OAuth($this->settings->key, $this->settings->secret, OAUTH_SIG_METHOD_HMACSHA1);
+            $o = new F1\OAuth\Client($this->settings->key, $this->settings->secret, F1\OAuth\SIG_METHOD_HMACSHA1);
             $o->disableSSLChecks();
             $o->setToken($this->accessToken->oauth_token, $this->accessToken->oauth_token_secret);
             $headers = array(
@@ -326,7 +328,7 @@ class API
                     return array('response' => $o->getLastResponse(), 'headers' => self::http_parse_headers($o->getLastResponseHeaders()));
                 }
             }
-        } catch (\OAuthException $e) {
+        } catch (F1\OAuth\Exception $e) {
             if ((int)$this->error['code'] >= 411 && $retryCount <= 2) { //retry 3 times
                 sleep(2);
                 return $this->fetch($url, $data, $method, $contentType, $returnHeaders, ($retryCount + 1));
@@ -522,11 +524,11 @@ class API
             } else {
                 $url = $this->settings->baseUrl . $this->tokenPaths['weblinkUser']['accessToken'] . "?ec={$message}";
             }
-            $o = new \OAuth($this->settings->key, $this->settings->secret, OAUTH_SIG_METHOD_HMACSHA1);
+            $o = new F1\OAuth\Client($this->settings->key, $this->settings->secret, F1\OAuth\SIG_METHOD_HMACSHA1);
             $token = $o->getAccessToken($url);
             if ($returnHeaders) $token['headers'] = self::http_parse_headers($o->getLastResponseHeaders());
             return (object)$token;
-        } catch (\OAuthException $e) {
+        } catch (F1\OAuth\Exception $e) {
             throw new Exception($e->getMessage(), $e->getCode(), $o->getLastResponse(), array('url' => $url), $e);
         }
     }
@@ -542,10 +544,10 @@ class API
     protected function obtainRequestToken()
     {
         try {
-            $o = new \OAuth($this->settings->key, $this->settings->secret, OAUTH_SIG_METHOD_HMACSHA1);
+            $o = new F1\OAuth\Client($this->settings->key, $this->settings->secret, F1\OAuth\SIG_METHOD_HMACSHA1);
             $url = $this->settings->baseUrl . $this->tokenPaths['general']['requestToken'];
             return (object)$o->getAccessToken($url);
-        } catch (\OAuthException $e) {
+        } catch (F1\OAuth\Exception $e) {
             throw new Exception($e->getMessage(), $e->getCode(), $o->getLastResponse(), array('url' => $url), $e);
         }
     }
@@ -560,12 +562,12 @@ class API
     {
         try {
             $_SESSION['F1RequestToken'] = $token;
-            $o = new \OAuth($this->settings->key, $this->settings->secret, OAUTH_SIG_METHOD_HMACSHA1);
+            $o = new F1\OAuth\Client($this->settings->key, $this->settings->secret, F1\OAuth\SIG_METHOD_HMACSHA1);
             $o->setToken($token->oauth_token, $this->oauth_token_secret);
             $url = $this->settings->baseUrl . $this->tokenPaths['portalUser']['userAuthorization'] . "?oauth_token={$token->oauth_token}&oauth_callback={$callbackUrl}";
             @header("Location:{$url}");
             die("<script>window.location='{$url}'</script><meta http-equiv='refresh' content='0;URL=\"{$url}\"'>"); //backup redirect
-        } catch (\OAuthException $e) {
+        } catch (F1\OAuth\Exception $e) {
             throw new Exception($e->getMessage(), $e->getCode(), $o->getLastResponse(), array('url' => $url), $e);
         }
     }
@@ -585,10 +587,10 @@ class API
 
         try {
             $url = $this->settings->baseUrl . $this->tokenPaths['general']['accessToken'];
-            $o = new \OAuth($this->settings->key, $this->settings->secret, OAUTH_SIG_METHOD_HMACSHA1);
+            $o = new F1\OAuth\Client($this->settings->key, $this->settings->secret, F1\OAuth\SIG_METHOD_HMACSHA1);
             $o->setToken($requestToken->oauth_token, $requestToken->oauth_token_secret);
             return (object)$o->getAccessToken($url);
-        } catch (\OAuthException $e) {
+        } catch (F1\OAuth\Exception $e) {
             throw new Exception($e->getMessage(), $e->getCode(), $o->getLastResponse(), array('url' => $url), $e);
         }
     }
