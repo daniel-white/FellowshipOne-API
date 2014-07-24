@@ -12,19 +12,7 @@ namespace F1\OAuth;
 
 require_once(__DIR__.'/oauth_interfaces.php');
 
-$http_methods = array(
-	HTTP_METHOD_GET => OAUTH_HTTP_METHOD_GET,
-	HTTP_METHOD_POST => OAUTH_HTTP_METHOD_POST,
-	HTTP_METHOD_PUT => OAUTH_HTTP_METHOD_PUT
-);
 
-$sig_methods = array(
-	SIG_METHOD_HMACSHA1 => OAUTH_SIG_METHOD_HMACSHA1
-);
-
-$auth_types = array(
-	AUTH_TYPE_AUTHORIZATION => OAUTH_AUTH_TYPE_AUTHORIZATION
-);
 
 class Client extends AbstractClient {
 	private $native_client;

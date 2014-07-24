@@ -21,7 +21,14 @@
 
 namespace F1;
 
-require_once(__DIR__.'/oauth/oauth_pecl.php');
+require_once(__DIR__.'/oauth/oauth_interfaces.php');
+
+if (extension_loaded('oauth')) { 
+    require_once(__DIR__.'/oauth/oauth_pecl.php');
+}
+else {
+
+}
 
 class Exception extends \Exception
 {
